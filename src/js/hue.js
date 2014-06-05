@@ -1,81 +1,267 @@
 function Hue(elem){
-  var hue = this;
+  this.elem   = elem;
+  this.canvas = new HueCanvas(elem.querySelector('canvas'));
+  this.selectTool('draw');
+}
+
+Hue.prototype.selectTool = function(tool){
+  [].slice.call(this.elem.querySelectorAll('[tool]')).forEach(function(elem){
+    elem.classList.remove('active');
+  });
+  this.elem.querySelector('[tool=' + tool + ']').classList.add('active');
+  this.canvas.selectTool(tool);
+};
+
+
+//====Tools=================================================================================
+function HueTool(ctx){
+  this.ctx = ctx;
+  this.init();
+}
+
+HueTool.prototype = {
+  init: function(){},
+  down: function(){},
+  move: function(){},
+  drag: function(){},
+  up: function(){},
+  setProperty: function(){},
+  colorPixel: function(data, pos, color){
+    //console.log('color', pos, color);
+    data[pos + 0] = Math.max(0, Math.min(255, color.r));
+    data[pos + 1] = Math.max(0, Math.min(255, color.g));
+    data[pos + 2] = Math.max(0, Math.min(255, color.b));
+    data[pos + 3] = Math.max(0, Math.min(255, color.a));
+  },
+  isColor: function(data, pos, r, g, b, a){
+    //TODO: add tolerance
+    return (data[pos + 0] == r && data[pos + 1] == g && data[pos + 2] == b && data[pos + 3] == a);
+  },
+  draw: function(imgData){
+    this.ctx.canvas.width = this.ctx.canvas.width;
+    this.ctx.putImageData(imgData, 0, 0);
+  }
+};
+
+function HueDrawTool(){
+  HueTool.apply(this, arguments);
+}
+
+HueDrawTool.prototype = Object.create(HueTool.prototype, {
+  init: {
+    value: function(){
+      this.setProperty('size', this.size);
+    }
+  },
+  down: {
+    value: function(pX, pY){
+      this.drag(pX, pY);
+    }
+  },
+  drag: {
+    value: function(pX, pY){
+      var x = Math.round(pX - (this.size / 2))
+        , y = Math.round(pY - (this.size / 2))
+        , d = 0
+        , v = { x: 0, y: 0 }
+        , s = 0
+      ;
+      
+      //Fill in missing pixels if the move was too fast
+      if(this.prev){
+        d = Math.sqrt(Math.pow(x - this.prev.x, 2) + Math.pow(y - this.prev.y, 2));
+        v.x = d ? (x - this.prev.x) / d : 0;
+        v.y = d ? (y - this.prev.y) / d : 0;
+        s = Math.ceil(d);
+      }
+      
+      do{
+        this.ctx.putImageData(this.brush, x - Math.round(s * v.x), y - Math.round(s * v.y));
+        s--;
+      }while(s > 0);
+      
+      this.prev = { x: x, y: y };
+    }
+  },
+  up: {
+    value: function(){
+      this.prev = null;
+    }
+  },
+  setProperty: {
+    value: function(prop, value){
+      switch(prop){
+        case 'size':
+          this.size = value;
+          
+          this.brush = this.ctx.createImageData(this.size, this.size);
+          this.setProperty('color', this.color);
+          break;
+        case 'color':
+          this.color = value;
+    
+          //TODO: shape and hardness;
+          for(var pos = 0, l = this.brush.data.length; pos < l; pos += 4){
+            this.colorPixel(this.brush.data, pos, this.color);
+          }
+          break;
+      }
+    }
+  },
+  prev: { value: null, writable: true },
+  brush: { value: null, writable: true },
   
-  this.canvas = elem.querySelector('canvas');
+  //Defaults
+  color: { value: { r: 0, g: 0, b: 0, a: 255 }, writable: true },
+  size: { value: 3, writable: true }
+});
+
+function HueFillTool(){
+  HueTool.apply(this, arguments);
+}
+
+HueFillTool.prototype = Object.create(HueTool.prototype, {
+  down: {
+    value: function(pX, pY){
+      console.log('Fill', pX, pY);
+      var x       = Math.round(pX)
+        , y       = Math.round(pY)
+        , width   = this.ctx.canvas.width
+        , height  = this.ctx.canvas.height
+        , img     = this.ctx.getImageData(0, 0, width, height)
+        , data    = img.data
+        , stack   = [[x, y]]
+        , pixPos  = (y * width + x) * 4
+        , startR  = data[pixPos + 0]
+        , startG  = data[pixPos + 1]
+        , startB  = data[pixPos + 2]
+        , startA  = data[pixPos + 3]
+        , newPos
+        , reachLeft
+        , reachRight
+      ;
+
+      while(stack.length){
+        newPos = stack.pop();
+        x = newPos[0];
+        y = newPos[1];
+        
+        pixPos = (y * width + x) * 4;
+        while(y-- >= 0 && this.isColor(data, pixPos, startR, startG, startB, startA)){
+          pixPos -= width * 4;
+        }
+        
+        pixPos += width * 4;
+				y += 1;
+				reachLeft = false;
+				reachRight = false;
+				
+				while (y <= height && this.isColor(data, pixPos, startR, startG, startB, startA)) {
+					y += 1;
+          
+          this.colorPixel(data, pixPos, this.color);
+
+					if (x > 0) {
+						if (this.isColor(data, pixPos - 4, startR, startG, startB, startA)) {
+							if (!reachLeft) {
+								// Add pixel to stack
+								stack.push([x - 1, y]);
+								reachLeft = true;
+							}
+						} else if (reachLeft) {
+							reachLeft = false;
+						}
+					}
+
+					if (x < width) {
+						if (this.isColor(data, pixPos + 4, startR, startG, startB, startA)) {
+							if (!reachRight) {
+								// Add pixel to stack
+								stack.push([x + 1, y]);
+								reachRight = true;
+							}
+						} else if (reachRight) {
+							reachRight = false;
+						}
+					}
+
+					pixPos += width * 4;
+				}
+      }
+      this.draw(img);
+    }
+  },
+  
+  //Defaults
+  color: { value: { r: 0, g: 0, b: 0, a: 255 }, writable: true }
+});
+
+function HueEraseTool(){
+  HueTool.apply(this, arguments);
+}
+
+HueEraseTool.prototype = Object.create(HueTool.prototype, {
+  drag: {
+    value: function(pX, pY){
+      console.log('Erase', pX, pY);
+    }
+  },
+  
+  //Defaults
+  size: { value: 3, writable: true }
+});
+//==============================================================================================
+
+
+function HueCanvas(canvas){
+  var self = this;
+  
+  this.canvas = canvas;
   this.ctx    = this.canvas.getContext('2d');
   
-  this.color  = { r: 0, g: 0, b: 0, a: 255 }; //black
-  this.size   = 3;
+  this.tools = {
+    draw:   new HueDrawTool(this.ctx),
+    fill:   new HueFillTool(this.ctx),
+    erase:  new HueEraseTool(this.ctx)
+  };
+  
   //TODO: add shape and hardness
   
   this.canvas.width = 768;
   this.canvas.height = 400;
   
-  this.down       = null;
-  this.prev       = null;
+  this.down = null;
   
   this.canvas.addEventListener('mousedown', function(e){
-    hue.down = e;
-    hue.draw(e);
+    self.down = e;
+    self.selectedTool.down(e.pageX - self.canvas.offsetLeft, e.pageY - self.canvas.offsetTop);
   });
   
-  this.canvas.addEventListener('mousemove', function(e){
-    if(hue.down){
-      hue.draw(e);
+  window.addEventListener('mousemove', function(e){
+    if(self.down){
+      self.selectedTool.drag(e.pageX - self.canvas.offsetLeft, e.pageY - self.canvas.offsetTop);
+    } else {
+      self.selectedTool.move(e.pageX - self.canvas.offsetLeft, e.pageY - self.canvas.offsetTop);
     }
   });
   
   window.addEventListener('mouseup', function(e){
-    hue.down = null;
-    hue.prev = null;
+    self.down = null;
+    self.selectedTool.up(e.pageX - self.canvas.offsetLeft, e.pageY - self.canvas.offsetTop);
   });
   
-  this.setBrushSize(this.size);
+  this.selectedTool = this.tools.draw;
 }
 
-Hue.prototype.draw = function(e){
-  var x = Math.round(e.pageX - this.canvas.offsetLeft - (this.size / 2))
-    , y = Math.round(e.pageY - this.canvas.offsetTop - (this.size / 2))
-    , d = 0
-    , v = { x: 0, y: 0 }
-    , s = 0
-  ;
-    
-  if(this.prev){
-    d = Math.sqrt(Math.pow(x - this.prev.x, 2) + Math.pow(y - this.prev.y, 2));
-    v.x = d ? (x - this.prev.x) / d : 0;
-    v.y = d ? (y - this.prev.y) / d : 0;
-    s = Math.ceil(d);
-  }
-  
-  do{
-    this.ctx.putImageData(this.brush, x - Math.round(s * v.x), y - Math.round(s * v.y));
-    s--;
-  }while(s > 0);
-  
-  this.prev = { x: x, y: y };
+HueCanvas.setToolProperty = function(prop, value){
+  this.selectedTool.setProperty(prop, value);
 };
 
-Hue.prototype.setBrushSize = function(size){
-  this.brush = this.ctx.createImageData(size, size);
-  //TODO: shape and hardness;
-  
-  this.setBrushColor(this.color);
-};
-
-Hue.prototype.setBrushColor = function(color){
-  this.color = color;
-  
-  var d = this.brush.data;
-  for(var i = 0, l = d.length; i < l; i += 4){
-    d[i + 0] = Math.max(0, Math.min(255, this.color.r));
-    d[i + 1] = Math.max(0, Math.min(255, this.color.g));
-    d[i + 2] = Math.max(0, Math.min(255, this.color.b));
-    d[i + 3] = Math.max(0, Math.min(255, this.color.a));
-  }
+HueCanvas.prototype.selectTool = function(tool){
+  this.selectedTool = this.tools[tool];
 };
 
 
 window.onload = function(){
-  new Hue(document.querySelector('.hue'));
+  window.hue = new Hue(document.querySelector('.hue'));
 };
