@@ -10,27 +10,37 @@ var path    = require('path')
   , watch   = require('gulp-watch')
 ;
 
-gulp.task('example', ['example:css'], function(){
-  var sources = gulp.src(["./build/**/*.js", "./build/**/*.css"], { read: false });
+gulp.task('example', ['example:css', 'example:js'], function(){
+  var sources = gulp.src(["./example/**/*.js", "./example/**/*.css"], { read: false });
   
   return gulp.src('./src/example/index.ejs')
     .pipe(ejs())
-    .pipe(inject(sources, { ignorePath: 'build', addRootSlash: false }))
+    .pipe(inject(sources, { ignorePath: 'example', addRootSlash: false }))
     .pipe(gulp.dest('./example'));
 });
 
-gulp.task('example:css', function(){
-  return gulp.src('./build/**/*')
+gulp.task('example:css', ['less'], function(){
+  return gulp.src('./build/**/*.css')
+    .pipe(gulp.dest('./example'));
+});
+
+gulp.task('example:js', ['js'], function(){
+  return gulp.src('./build/**/*.js')
     .pipe(gulp.dest('./example'));
 });
 
 gulp.task('less', function () {
-  return gulp.src('./src/less/main.less')
+  return gulp.src('./src/less/hue.less')
     .pipe(less())
     .pipe(gulp.dest('./build/css'));
 });
 
-gulp.task('build', ['less', 'example']);
+gulp.task('js', function () {
+  return gulp.src('./src/**/*.js')
+    .pipe(gulp.dest('./build'));
+});
+
+gulp.task('build', ['example']);
 
 gulp.task('watch', function(){
   watch({ glob: ['src/**/*', 'src/*'] }, ['build']);
