@@ -1,0 +1,102 @@
+@modalBg: #333;
+
+@toolbarBg: #fff;
+@toolbarHeight: 22px;
+@toolbarBorder: #ccc;
+@toolbarShadow: 0px 3px 3px 0px @toolbarBorder;
+
+@toolbarHover: #ccc;
+@toolbarActive: #999;
+
+.hue {
+  user-select: none;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  
+  .button {
+    
+  }
+  
+  .preview {
+    
+  }
+  
+  .editor {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    font-family: arial, san-serif;
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    
+    background-color: @modalBg;
+    
+    .toolbar {
+      height:       @toolbarHeight;
+      line-height:  @toolbarHeight;
+      min-height:   @toolbarHeight;
+    
+      background: @toolbarBg;
+      box-shadow: @toolbarShadow;
+      z-index: 1;
+    
+      ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      
+      li {
+        display: block;
+        float: left;
+        width: 30px;
+        text-align: center;
+        
+        &:not(:last-child){
+          border-right: 1px solid @toolbarBorder;
+        }
+        
+        a {
+          color: inherit;
+          text-decoration: none;
+          display: block;
+          
+          &:hover {
+            background-color: @toolbarHover;
+          }
+          &:active, &.active {
+            background-color: @toolbarActive;
+          }
+          
+        }
+      }
+      
+      @media only screen and (max-width : 768px) {
+        width: 100%;
+      }
+      
+      width: 768px;
+    }
+    
+    .canvas {
+      z-index: 0;
+      background: @toolbarBg;
+      cursor: crosshair;
+      
+      @media only screen and (max-width : 768px) {
+        width: 100%;
+        flex-grow: 1;
+      }
+      
+      width: 768px;
+    }
+    
+    
+  }
+}
