@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<link href="../polymer/polymer.html" rel="import">
+<link href="../core-icons/core-icons.html" rel="import">
+<link href="../core-overlay/core-overlay.html" rel="import">
+<link href="../core-toolbar/core-toolbar.html" rel="import">
+<link href="../paper-shadow/paper-shadow.html" rel="import">
+<link href="../paper-icon-button/paper-icon-button.html" rel="import" >
+<link href="hue-canvas.html" rel="import" >
+
+<polymer-element name="hue-dialog" attributes="opened transition">
+
+  <template>
+    <link no-shim href="hue-dialog.css" rel="stylesheet">
+    
+    <div id="shadow"></div>
+    <paper-shadow z="1" target="{{$.shadow}}" hasPosition></paper-shadow>
+    
+    <core-overlay id="overlay"
+                  opened="{{opened}}"
+                  closeSelector="[dismissive],[affirmative]"
+                  transition="{{transition}}"
+                  autoCloseDisabled="true"
+                  target="{{}}"
+                  backdrop="true"
+                  sizingTarget="{{$.container}}"
+                  margin="5vh">
+    </core-overlay>
+    
+    <div id="container" layout vertical>
+      <core-toolbar id="toolbar" class="paper-shadow-bottom-z-1">
+        <paper-icon-button icon="menu"></paper-icon-button>
+      </core-toolbar>
+
+      <div id="main" layout horizontal center flex>
+        <hue-canvas id="canvas" width="{{width}}" height="{{height}}" flex></hue-canvas>
+      </div>
+      
+      <core-toolbar id="actions" class="paper-shadow-top-z-1">
+        <paper-icon-button icon="rotate-left" on-tap="{{undo}}"></paper-icon-button>
+        <paper-icon-button icon="rotate-right" on-tap="{{redo}}"></paper-icon-button>
+        <span flex></span>
+        <paper-icon-button icon="clear"></paper-icon-button>
+        <paper-icon-button icon="check"></paper-icon-button>
+      </core-toolbar>
+    </div>
+    
+  </template>
+  <script>
+    
+    Polymer('hue-dialog', {
+
+      /**
+       * Set opened to true to show the dialog and to false to hide it.
+       * A dialog may be made intially opened by setting its opened attribute.
+
+       * @attribute opened
+       * @type boolean
+       * @default false
+       */
+      opened: false,
+
+      /**
+       * Set this property to the id of a <core-transition> element to specify
+       * the transition to use when opening/closing this dialog.
+       *
+       * @attribute transition
+       * @type string
+       * @default ''
+       */
+      transition: '',
+      
+      width: 300,
+      height: 300,
+
+      /**
+       * Toggle the dialog's opened state.
+       * @method toggle
+       */
+      toggle: function() {
+        this.$.overlay.toggle();
+      },
+      undo: function(){
+        this.$.canvas.undo();
+      },
+      redo: function(){
+        this.$.canvas.redo();
+      }
+    });
+  </script>
+
+</polymer-element>

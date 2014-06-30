@@ -1,5 +1,4 @@
 web:
   build: ./
-  command: npm start
   expose:
     - 80

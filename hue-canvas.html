@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<link href="../polymer/polymer.html" rel="import">
+<link href="../paper-shadow/paper-shadow.html" rel="import">
+
+<polymer-element name="hue-canvas" attributes="width height" on-down="{{downAction}}" on-track="{{trackAction}}">
+
+  <template>
+    <style>
+      #canvas {
+        border-top: 1px solid rgba(0,0,0,0.12);
+        border-bottom: 1px solid rgba(0,0,0,0.12);
+        cursor: crosshair;
+        background: #fff;
+      }
+      
+      #shadow {
+        position: relative;
+      }
+    </style>
+    <paper-shadow target="{{$.canvas}}" hasPosition></paper-shadow>
+    <div id="container" layout vertical center>
+      <canvas id="canvas" width="{{width}}" height="{{height}}" touch-action="none" class="paper-shadow-top-z-1 paper-shadow-bottom-z-1"></canvas>
+    </div>
+    
+  </template>
+  <script src="hue-tools.js"></script>
+  <script>
+    
+    Polymer('hue-canvas', {
+      publish: {
+        width:  600,
+        height: 600,
+        tool:   'draw'
+      },
+      down:         null,
+      tools:        {},
+      history:      null,
+      historyIndex: null,
+      ready: function(){
+        this.ctx = this.$.canvas.getContext('2d');
+        this.tools = {
+          draw:   new HueDrawTool(this.ctx),
+          fill:   new HueFillTool(this.ctx),
+          erase:  new HueEraseTool(this.ctx)
+        };
+        
+        this.selectedTool = this.tools.draw;
+        this.history = [this.ctx.getImageData(0, 0, this.$.canvas.width, this.$.canvas.height)];
+        this.historyIndex = 0;
+        
+        window.addEventListener('mouseup', this.upAction.bind(this));
+        window.addEventListener('pointerup', this.upAction.bind(this));
+      },
+      canvasCoords: function(e){
+        var x = e.pageX - ((this.$.canvas.offsetParent && this.$.canvas.offsetParent.offsetLeft) + this.$.canvas.offsetLeft);
+        var y = e.pageY - ((this.$.canvas.offsetParent && this.$.canvas.offsetParent.offsetTop) + this.$.canvas.offsetTop);
+        return { x: x, y: y };
+      },
+      storeCanvasState: function(){
+        this.history[++this.historyIndex] = this.ctx.getImageData(0, 0, this.$.canvas.width, this.$.canvas.height);
+        this.history.length = this.historyIndex + 1;
+        
+        if(this.history.length > 50){
+          this.history.shift();
+          this.historyIndex--;
+        }
+      },
+      undo: function(){
+        if(this.historyIndex > 0){
+          this.$.canvas.width = this.$.canvas.width;
+          this.ctx.putImageData(this.history[--this.historyIndex], 0, 0);
+        }
+      },
+      redo: function(){
+        if(this.historyIndex !== this.history.length - 1){
+          this.$.canvas.width = this.$.canvas.width;
+          this.ctx.putImageData(this.history[++this.historyIndex], 0, 0);
+        }
+      },
+      downAction: function(e){
+        var coords = this.canvasCoords(e);
+        
+        if(this.selectedTool.down(coords.x, coords.y, e.pointerId === 1 && e.button === 2)){
+          this.storeCanvasState();
+        }
+      },
+      upAction: function(e){
+        var coords = this.canvasCoords(e);
+    
+        if(this.selectedTool.up(coords.x, coords.y)){
+          this.storeCanvasState();
+        }
+      },
+      trackAction: function(e){
+        var coords = this.canvasCoords(e);
+        
+        if(this.selectedTool.track(coords.x, coords.y)){
+          this.storeCanvasState();
+        };
+      }
+
+    });
+  </script>
+
+</polymer-element>
