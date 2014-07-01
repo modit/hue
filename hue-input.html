@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../core-icons/iconsets/image-icons.html">
+<link href="hue-dialog.html" rel="import">
+
+<polymer-element name="hue-input" attributes="opened transition width height">
+
+  <template>
+    <template if="{{value}}">
+      <paper-icon-button on-tap="{{open}}" iconSrc="{{value}}"></paper-icon-button>
+    </template>
+    <template if="{{!value}}">
+      <paper-icon-button on-tap="{{open}}" icon="image:photo"></paper-icon-button>
+    </template>
+    <hue-dialog id="dialog" opened="{{opened}}" value={{value}}></hue-dialog>
+  </template>
+  <script>
+    
+    Polymer('hue-input', {
+
+      /**
+       * Set opened to true to show the dialog and to false to hide it.
+       * A dialog may be made intially opened by setting its opened attribute.
+
+       * @attribute opened
+       * @type boolean
+       * @default false
+       */
+      opened: false,
+
+      /**
+       * Set this property to the id of a <core-transition> element to specify
+       * the transition to use when opening/closing this dialog.
+       *
+       * @attribute transition
+       * @type string
+       * @default ''
+       */
+      transition: '',
+      
+      width: 300,
+      height: 300,
+      value: '',
+      open: function(){
+        this.opened = !this.opened;
+      }
+    });
+  </script>
+
+</polymer-element>

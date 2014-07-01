@@ -1,16 +1,35 @@
 <!DOCTYPE html>
-<link href="../polymer/polymer.html" rel="import">
-<link href="../core-icons/core-icons.html" rel="import">
-<link href="../core-overlay/core-overlay.html" rel="import">
-<link href="../core-toolbar/core-toolbar.html" rel="import">
-<link href="../paper-shadow/paper-shadow.html" rel="import">
-<link href="../paper-icon-button/paper-icon-button.html" rel="import" >
-<link href="hue-canvas.html" rel="import" >
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../core-icons/core-icons.html">
+<link rel="import" href="../core-icons/iconsets/image-icons.html">
+<link rel="import" href="../core-overlay/core-overlay.html">
+<link rel="import" href="../core-toolbar/core-toolbar.html">
+<link rel="import" href="../core-selector/core-selector.html">
+<link rel="import" href="../paper-shadow/paper-shadow.html">
+<link rel="import" href="../paper-icon-button/paper-icon-button.html">
+<link rel="import" href="hue-canvas.html">
+<link rel="import" href="hue-brush.html">
 
-<polymer-element name="hue-dialog" attributes="opened transition">
+<polymer-element name="hue-dialog" attributes="opened transition value">
 
   <template>
     <link no-shim href="hue-dialog.css" rel="stylesheet">
+    
+    <style>
+      core-selector paper-icon-button:not(.core-selected)::shadow core-icon {
+        fill: #c9c9c9;
+      }
+      
+      paper-icon-button[icon=check]::shadow core-icon {
+        fill: #0f9d58;
+      }
+      
+      #brushSelector {
+        position: absolute;
+        right: 0;
+        z-index: 2;
+      }
+    </style>
     
     <div id="shadow"></div>
     <paper-shadow z="1" target="{{$.shadow}}" hasPosition></paper-shadow>
@@ -28,19 +47,30 @@
     
     <div id="container" layout vertical>
       <core-toolbar id="toolbar" class="paper-shadow-bottom-z-1">
-        <paper-icon-button icon="menu"></paper-icon-button>
+        <core-selector selected="0" on-core-select="{{selectTool}}" valueattr="id">
+          <paper-icon-button isToggle fill icon="create" id="draw"></paper-icon-button>
+          <!--paper-icon-button isToggle fill icon="image:photo" id="fill"></paper-icon-button-->
+          <paper-icon-button isToggle fill icon="check-box-blank" id="erase"></paper-icon-button>
+        </core-selector>
+        <span flex></span>
+        <template if="{{$.canvas.selectedTool.brush}}">
+          <img src="{{$.canvas.selectedTool.brush.url}}">
+          <paper-icon-button icon="image:palette" on-tap="{{toggleBrushSelector}}"></paper-icon-button>
+        </template>
       </core-toolbar>
-
+      
+      <hue-brush id="brushSelector" hue-brush brush="{{$.canvas.selectedTool.brush}}" greyscale="{{$.canvas.tool == 'erase'}}" hidden></hue-brush>
+      
       <div id="main" layout horizontal center flex>
         <hue-canvas id="canvas" width="{{width}}" height="{{height}}" flex></hue-canvas>
       </div>
-      
+
       <core-toolbar id="actions" class="paper-shadow-top-z-1">
         <paper-icon-button icon="rotate-left" on-tap="{{undo}}"></paper-icon-button>
         <paper-icon-button icon="rotate-right" on-tap="{{redo}}"></paper-icon-button>
         <span flex></span>
-        <paper-icon-button icon="clear"></paper-icon-button>
-        <paper-icon-button icon="check"></paper-icon-button>
+        <paper-icon-button icon="clear" on-tap="{{cancel}}"></paper-icon-button>
+        <paper-icon-button icon="check" on-tap="{{done}}"></paper-icon-button>
       </core-toolbar>
     </div>
     
@@ -71,6 +101,7 @@
       
       width: 300,
       height: 300,
+      value: '',
 
       /**
        * Toggle the dialog's opened state.
@@ -84,6 +115,40 @@
       },
       redo: function(){
         this.$.canvas.redo();
+      },
+      selectTool: function(e){
+        if(e.detail.isSelected){
+          this.$.brushSelector.setAttribute('hidden', '');
+          this.$.canvas.selectTool(e.detail.item.id);
+        }
+      },
+      toggleBrushSelector: function(){
+        if(this.$.brushSelector.getAttribute('hidden') === null){
+          this.$.brushSelector.setAttribute('hidden', '');
+        }else {
+          this.$.brushSelector.removeAttribute('hidden');
+        }
+      },
+      observe: {
+        '$.canvas.selectedTool.brush.color.r': 'brushUpdated',
+        '$.canvas.selectedTool.brush.color.g': 'brushUpdated',
+        '$.canvas.selectedTool.brush.color.b': 'brushUpdated',
+        '$.canvas.selectedTool.brush.color.a': 'brushUpdated',
+        '$.canvas.selectedTool.brush.tip.hardness': 'brushUpdated',
+        '$.canvas.selectedTool.brush.tip.shape': 'brushUpdated',
+        '$.canvas.selectedTool.brush.tip.size': 'brushUpdated'
+      },
+      brushUpdated: function(){
+        if(this.$.canvas.selectedTool.brush) {
+          this.$.canvas.selectedTool.brush.refresh();
+        }
+      },
+      done: function(){
+        this.value = this.$.canvas.$.canvas.toDataURL();
+        this.opened = false;
+      },
+      cancel: function(){
+        this.opened = false;
       }
     });
   </script>

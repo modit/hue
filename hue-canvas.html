@@ -2,7 +2,7 @@
 <link href="../polymer/polymer.html" rel="import">
 <link href="../paper-shadow/paper-shadow.html" rel="import">
 
-<polymer-element name="hue-canvas" attributes="width height" on-down="{{downAction}}" on-track="{{trackAction}}">
+<polymer-element name="hue-canvas" attributes="width height" >
 
   <template>
     <style>
@@ -19,7 +19,11 @@
     </style>
     <paper-shadow target="{{$.canvas}}" hasPosition></paper-shadow>
     <div id="container" layout vertical center>
-      <canvas id="canvas" width="{{width}}" height="{{height}}" touch-action="none" class="paper-shadow-top-z-1 paper-shadow-bottom-z-1"></canvas>
+      <canvas id="canvas" width="{{width}}" height="{{height}}" class="paper-shadow-top-z-1 paper-shadow-bottom-z-1"
+            on-track="{{trackAction}}"
+            on-up="{{upAction}}"
+            on-down="{{downAction}}"
+            touch-action="none"></canvas>
     </div>
     
   </template>
@@ -47,9 +51,6 @@
         this.selectedTool = this.tools.draw;
         this.history = [this.ctx.getImageData(0, 0, this.$.canvas.width, this.$.canvas.height)];
         this.historyIndex = 0;
-        
-        window.addEventListener('mouseup', this.upAction.bind(this));
-        window.addEventListener('pointerup', this.upAction.bind(this));
       },
       canvasCoords: function(e){
         var x = e.pageX - ((this.$.canvas.offsetParent && this.$.canvas.offsetParent.offsetLeft) + this.$.canvas.offsetLeft);
@@ -76,6 +77,10 @@
           this.$.canvas.width = this.$.canvas.width;
           this.ctx.putImageData(this.history[++this.historyIndex], 0, 0);
         }
+      },
+      selectTool: function(tool){
+        this.tool = tool;
+        this.selectedTool = this.tools[tool];
       },
       downAction: function(e){
         var coords = this.canvasCoords(e);

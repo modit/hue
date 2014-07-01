@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<link href="../polymer/polymer.html" rel="import">
+<link href="../paper-shadow/paper-shadow.html" rel="import">
+<link href="../paper-slider/paper-slider.html" rel="import">
+
+<polymer-element name="hue-brush" attributes="brush greyscale">
+
+  <template>
+    <style>
+      :host {
+        background: #fff;
+        padding: 24px;
+        font-family: sans-serif;
+      }
+      
+      #red::shadow #sliderKnobInner,
+      #red::shadow #sliderKnobInner::before,
+      #red::shadow #sliderBar::shadow #activeProgress {
+        background-color: #e51c23;
+      }
+      
+      #green::shadow #sliderKnobInner,
+      #green::shadow #sliderKnobInner::before,
+      #green::shadow #sliderBar::shadow #activeProgress {
+        background-color: #259b24;
+      }
+      
+      #blue::shadow #sliderKnobInner,
+      #blue::shadow #sliderKnobInner::before,
+      #blue::shadow #sliderBar::shadow #activeProgress {
+        background-color: #5677fc;
+      }
+      
+      #alpha::shadow #sliderKnobInner,
+      #alpha::shadow #sliderKnobInner::before,
+      #alpha::shadow #sliderBar::shadow #activeProgress {
+        background-color: rgba(0,0,0,0.12);
+      }
+      
+      #options paper-slider::shadow #sliderKnobInner,
+      #options paper-slider::shadow #sliderKnobInner::before,
+      #options paper-slider::shadow #sliderBar::shadow #activeProgress {
+        background-color: rgba(0,0,0,1);
+      }
+      
+      .divider {
+        border-bottom: 1px solid rgba(0,0,0,0.12);
+        width: 100%;
+        margin-top:16px;
+        margin-bottom:16px;
+      }
+      
+    </style>
+    <paper-shadow target="{{}}" hasPosition></paper-shadow>
+    <div layout vertical>
+      <template if="{{!greyscale}}">
+        <div id="color" layout vertical>
+          <div>Red</div>
+          <paper-slider min="0" max="255" value="{{brush.color.r}}" id="red" editable></paper-slider>
+          <div>Green</div>
+          <paper-slider min="0" max="255" value="{{brush.color.g}}" id="green" editable></paper-slider>
+          <div>Blue</div>
+          <paper-slider min="0" max="255" value="{{brush.color.b}}" id="blue" editable></paper-slider>
+        </div>
+      </template>
+      <div id="opacity" layout vertical>
+        <div>Opacity</div>
+        <paper-slider min="0" max="1" step="0.01" value="{{brush.color.a}}" id="alpha" editable></paper-slider>
+      </div>
+      <div class="divider"></div>
+      <div id="options" layout vertical>
+        <div>Hardness</div>
+        <paper-slider min="0" max="1" step="0.01" value="{{brush.tip.hardness}}" id="hard" editable></paper-slider>
+        <div>Size</div>
+        <paper-slider min="0" max="48" value="{{brush.tip.size}}" id="size" editable></paper-slider>
+      </div>
+    </div>
+    
+  </template>
+  <script>
+    Polymer('hue-brush', {
+      greyscale: false,
+    });
+  </script>
+
+</polymer-element>
