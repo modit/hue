@@ -1,5 +1,6 @@
 :host {
   background: white;
+  font-family: sans-serif;
   color: rgba(0, 0, 0, 0.87);
 }
 
@@ -9,6 +10,7 @@
 
 #toolbar {
   z-index: 0;
+  background: #fff;
 }
 
 #main {
@@ -19,6 +21,7 @@
 
 #actions {
   z-index: 0;
+  background: #fff;
 }
 
 #container {

@@ -6,13 +6,23 @@
 <polymer-element name="hue-input" attributes="opened transition width height">
 
   <template>
+    <style>
+      #preview::shadow core-icon {
+        border-radius: 3px;
+        border-width: 2px;
+        border-style: solid;
+        box-sizing: border-box;
+        -moz-box-sizing: border-box;
+        -webkit-box-sizing: border-box;
+      }
+    </style>
     <template if="{{value}}">
-      <paper-icon-button on-tap="{{open}}" iconSrc="{{value}}"></paper-icon-button>
+      <paper-icon-button on-tap="{{open}}" iconSrc="{{value}}" id="preview"></paper-icon-button>
     </template>
     <template if="{{!value}}">
       <paper-icon-button on-tap="{{open}}" icon="image:photo"></paper-icon-button>
     </template>
-    <hue-dialog id="dialog" opened="{{opened}}" value={{value}}></hue-dialog>
+    <hue-dialog id="dialog" opened="{{opened}}" value={{value}} width="{{width}}" height="{{height}}"></hue-dialog>
   </template>
   <script>
     

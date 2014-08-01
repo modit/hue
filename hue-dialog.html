@@ -6,11 +6,12 @@
 <link rel="import" href="../core-toolbar/core-toolbar.html">
 <link rel="import" href="../core-selector/core-selector.html">
 <link rel="import" href="../paper-shadow/paper-shadow.html">
+<link rel="import" href="../paper-slider/paper-slider.html">
 <link rel="import" href="../paper-icon-button/paper-icon-button.html">
 <link rel="import" href="hue-canvas.html">
 <link rel="import" href="hue-brush.html">
 
-<polymer-element name="hue-dialog" attributes="opened transition value">
+<polymer-element name="hue-dialog" attributes="opened transition value width height">
 
   <template>
     <link no-shim href="hue-dialog.css" rel="stylesheet">
@@ -29,6 +30,19 @@
         right: 0;
         z-index: 2;
       }
+      
+      #zoom {
+        z-index: 3;
+      }
+      
+      #zoom-slider {
+        width: 100%;
+      }
+      
+      #toolbar {
+        background: white;
+      }
+      
     </style>
     
     <div id="shadow"></div>
@@ -62,12 +76,18 @@
       <hue-brush id="brushSelector" hue-brush brush="{{$.canvas.selectedTool.brush}}" greyscale="{{$.canvas.tool == 'erase'}}" hidden></hue-brush>
       
       <div id="main" layout horizontal center flex>
-        <hue-canvas id="canvas" width="{{width}}" height="{{height}}" flex></hue-canvas>
+        <hue-canvas id="canvas" width="{{width}}" height="{{height}}" zoom="{{zoom}}" flex></hue-canvas>
+      </div>
+      
+      <div id="zoom" hidden>
+        <paper-slider min="0.25" max="10" step="0.01" value="{{zoom}}" id="zoom-slider" pin="true"></paper-slider>
       </div>
 
       <core-toolbar id="actions" class="paper-shadow-top-z-1">
         <paper-icon-button icon="rotate-left" on-tap="{{undo}}"></paper-icon-button>
         <paper-icon-button icon="rotate-right" on-tap="{{redo}}"></paper-icon-button>
+        <span flex></span>
+        <paper-icon-button icon="add-circle-outline" on-tap="{{toggleZoom}}"></paper-icon-button>
         <span flex></span>
         <paper-icon-button icon="clear" on-tap="{{cancel}}"></paper-icon-button>
         <paper-icon-button icon="check" on-tap="{{done}}"></paper-icon-button>
@@ -101,6 +121,7 @@
       
       width: 300,
       height: 300,
+      zoom: 1,
       value: '',
 
       /**
@@ -129,6 +150,13 @@
           this.$.brushSelector.removeAttribute('hidden');
         }
       },
+      toggleZoom: function(){
+        if(this.$.zoom.getAttribute('hidden') === null){
+          this.$.zoom.setAttribute('hidden', '');
+        }else {
+          this.$.zoom.removeAttribute('hidden');
+        }
+      },
       observe: {
         '$.canvas.selectedTool.brush.color.r': 'brushUpdated',
         '$.canvas.selectedTool.brush.color.g': 'brushUpdated',
@@ -144,7 +172,11 @@
         }
       },
       done: function(){
-        this.value = this.$.canvas.$.canvas.toDataURL();
+        if(this.$.canvas.historyIndex){
+          this.value = this.$.canvas.$.canvas.toDataURL();
+        }else {
+          this.value = '';
+        }
         this.opened = false;
       },
       cancel: function(){

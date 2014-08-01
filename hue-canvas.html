@@ -2,10 +2,11 @@
 <link href="../polymer/polymer.html" rel="import">
 <link href="../paper-shadow/paper-shadow.html" rel="import">
 
-<polymer-element name="hue-canvas" attributes="width height" >
+<polymer-element name="hue-canvas" attributes="width height zoom" >
 
   <template>
     <style>
+      
       #canvas {
         border-top: 1px solid rgba(0,0,0,0.12);
         border-bottom: 1px solid rgba(0,0,0,0.12);
@@ -19,10 +20,11 @@
     </style>
     <paper-shadow target="{{$.canvas}}" hasPosition></paper-shadow>
     <div id="container" layout vertical center>
-      <canvas id="canvas" width="{{width}}" height="{{height}}" class="paper-shadow-top-z-1 paper-shadow-bottom-z-1"
+      <canvas id="canvas" width="{{width * zoom}}" height="{{height * zoom}}" class="paper-shadow-top-z-1 paper-shadow-bottom-z-1"
             on-track="{{trackAction}}"
             on-up="{{upAction}}"
             on-down="{{downAction}}"
+            on-pinch="{{pinchAction}}"
             touch-action="none"></canvas>
     </div>
     
@@ -34,7 +36,11 @@
       publish: {
         width:  600,
         height: 600,
+        zoom: 1,
         tool:   'draw'
+      },
+      observe: {
+        zoom: 'redraw'
       },
       down:         null,
       tools:        {},
@@ -42,6 +48,7 @@
       historyIndex: null,
       ready: function(){
         this.ctx = this.$.canvas.getContext('2d');
+        this.buffer = document.createElement('canvas').getContext('2d');
         this.tools = {
           draw:   new HueDrawTool(this.ctx),
           fill:   new HueFillTool(this.ctx),
@@ -49,16 +56,21 @@
         };
         
         this.selectedTool = this.tools.draw;
-        this.history = [this.ctx.getImageData(0, 0, this.$.canvas.width, this.$.canvas.height)];
+        this.history = [this.ctx.getImageData(0, 0, this.ctx.canvas.width, this.ctx.canvas.height)];
         this.historyIndex = 0;
       },
       canvasCoords: function(e){
-        var x = e.pageX - ((this.$.canvas.offsetParent && this.$.canvas.offsetParent.offsetLeft) + this.$.canvas.offsetLeft);
-        var y = e.pageY - ((this.$.canvas.offsetParent && this.$.canvas.offsetParent.offsetTop) + this.$.canvas.offsetTop);
+        var x = e.pageX - this.$.canvas.offsetLeft;
+        var y = e.pageY - this.$.canvas.offsetTop;
+        
+        if(this.$.canvas.offsetParent){
+          x -= this.$.canvas.offsetParent.offsetLeft;
+          y -= this.$.canvas.offsetParent.offsetTop;
+        }
         return { x: x, y: y };
       },
       storeCanvasState: function(){
-        this.history[++this.historyIndex] = this.ctx.getImageData(0, 0, this.$.canvas.width, this.$.canvas.height);
+        this.history[++this.historyIndex] = this.ctx.getImageData(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
         this.history.length = this.historyIndex + 1;
         
         if(this.history.length > 50){
@@ -66,16 +78,28 @@
           this.historyIndex--;
         }
       },
+      redraw: function(){
+        var self = this;
+        requestAnimationFrame(function(){
+          
+          self.buffer.canvas.width = self.width;
+          self.buffer.canvas.height = self.height;
+          self.buffer.putImageData(self.history[self.historyIndex], 0, 0);
+          
+          self.ctx.scale(self.zoom, self.zoom);
+          self.ctx.drawImage(self.buffer.canvas, 0, 0);
+        });
+      },
       undo: function(){
         if(this.historyIndex > 0){
           this.$.canvas.width = this.$.canvas.width;
-          this.ctx.putImageData(this.history[--this.historyIndex], 0, 0);
+          this.ctx.putImageData(this.history[--this.historyIndex], 0, 0, 0, 0, this.$.canvas.width, this.$.canvas.height);
         }
       },
       redo: function(){
         if(this.historyIndex !== this.history.length - 1){
           this.$.canvas.width = this.$.canvas.width;
-          this.ctx.putImageData(this.history[++this.historyIndex], 0, 0);
+          this.ctx.putImageData(this.history[++this.historyIndex], 0, 0, 0, 0, this.$.canvas.width, this.$.canvas.height);
         }
       },
       selectTool: function(tool){
