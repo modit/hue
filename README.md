@@ -9,3 +9,4 @@
 - The editor will be added to the DOM (hidden at first)
 - After editing the bas64 contents will be added to the input field
 
+## Check it out on modit
